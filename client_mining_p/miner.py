@@ -1,20 +1,28 @@
 import hashlib
 import requests
-
 import sys
+import requests
 import json
+import time
+import hashlib
 
 
+# TODO: Implement functionality to search for a proof 
 def proof_of_work(block):
     """
     Simple Proof of Work Algorithm
-    Stringify the block and look for a proof.
-    Loop through possibilities, checking each one against `valid_proof`
-    in an effort to find a number that is a valid proof
+    Find a number p such that ha contains 6 leading
+    zeroes
     :return: A valid proof for the provided block
     """
-    pass
+    # TODO
+    block_string = json.dumps(block, sort_keys=True).encode()
+    proof = 0
+    while valid_proof(block_string, proof) is False:
+        proof += 1
 
+    return proof
+    # return proof
 
 def valid_proof(block_string, proof):
     """
@@ -27,44 +35,65 @@ def valid_proof(block_string, proof):
     correct number of leading zeroes.
     :return: True if the resulting hash is a valid proof, False otherwise
     """
-    pass
+    # TODO
+    guess = f'{block_string}{proof}'.encode()
+    guess_hash = hashlib.sha256(guess).hexdigest()
+    return guess_hash[:6] == "000000"
+    # return True or False
 
+
+def hash(block):
+    block_string = json.dumps(block, sort_keys=True).encode()
+
+    return hashlib.sha256(block_string).hexdigest()
+
+def new_block(proof, previous_block):
+    """
+    Create a new Block in the Blockchain
+    :param proof: <int> The proof given by the Proof of Work algorithm
+    :param previous_hash: (Optional) <str> Hash of previous Block
+    :return: <dict> New Block
+    """
+
+    block = {
+        'index': previous_block["index"] + 1 ,
+        'timestamp': time.time(),
+        'transactions': [],
+        'proof': proof,
+        'previous_hash': previous_block["previous_hash"]
+    }
+
+    return block
 
 if __name__ == '__main__':
-    # What is the server address? IE `python3 miner.py https://server.com/api/`
+    # What node are we interacting with?
     if len(sys.argv) > 1:
         node = sys.argv[1]
     else:
         node = "http://localhost:5000"
 
-    # Load ID
-    f = open("my_id.txt", "r")
-    id = f.read()
-    print("ID is", id)
-    f.close()
-
+    coins_mined = 0
     # Run forever until interrupted
+    index = 2
     while True:
-        r = requests.get(url=node + "/last_block")
-        # Handle non-json response
-        try:
-            data = r.json()
-        except ValueError:
-            print("Error:  Non-json response")
-            print("Response returned:")
-            print(r)
-            break
+        # TODO: Get the last proof from the server and look for a new one
+        response = requests.get(node + "/last_block")
 
-        # TODO: Get the block from `data` and use it to look for a new proof
-        # new_proof = ???
 
-        # When found, POST it to the server {"proof": new_proof, "id": id}
-        post_data = {"proof": new_proof, "id": id}
+        lastBlock = json.loads(response.text)["last_block"]
+        print ("Last block", lastBlock)
 
-        r = requests.post(url=node + "/mine", json=post_data)
-        data = r.json()
+        newProofOfWork = proof_of_work(response.text)
 
-        # TODO: If the server responds with a 'message' 'New Block Forged'
+        # TODO: When found, POST it to the server {"proof": new_proof}
+        newBlock = new_block(newProofOfWork, lastBlock)
+        requests.post(node + "/mine", json   = newBlock)
+        index += 1
+
+        # TODO: We're going to have to research how to do a POST in Python
+        # HINT: Research `requests` and remember we're sending our data as JSON
+        # TODO: If the server responds with 'New Block Forged'
         # add 1 to the number of coins mined and print it.  Otherwise,
         # print the message from the server.
-        pass
+        coins_mined += 1
+        input("Press any key to continue... ")
